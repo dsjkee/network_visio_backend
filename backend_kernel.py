@@ -69,15 +69,19 @@ def backend_process(dest_ip, dest_port, packet_len):
     hosts[idx_1].input_traffic += packet_len
     return 1
 
+
+ETH_P_ALL = 0x0003
 def backend_deamon():
     try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_IP)
-    except socket.error:
+        s = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.htons(0x0003))
+    except socket.error, msg:
         print "Can't create socket"
+	print msg[0]
+	print msg[1]
         sys.exit()
 
-    t = threading.Timer(1.0, send_to_gui)
-    t.start()
+    #t = threading.Timer(1.0, send_to_gui)
+    #t.start()
 
     while True:
 
@@ -86,26 +90,28 @@ def backend_deamon():
         print (packet)
         packet_size = len(packet)  # Kbyte
 
-        print ("Size:",packet_size)
+#        print ("Size:",packet_size)
 
-        ip_header = packet[eth_head_len, eth_head_len + 20]
-        iph = struct.unpack('!BBHHHBBH4s4s', ip_header)
+        ip_header = packet[eth_head_len : eth_head_len + 20]
+        iph = struct.unpack("!BBHHHBBH4s4s", ip_header)
         d_addr = socket.inet_ntoa(iph[9]);
-        print ("Dest ip:", d_addr)
-        if d_addr not in filter_addrs:
-            continue
+#        print ("Dest ip:", d_addr)
+        #if d_addr not in filter_addrs:
+        #    continue
         protocol = iph[6]
-        if protocol not in (17, 6):
+	iph_len = iph[0]&0xF 
+#	print iph_len, iph_len*4       
+	if protocol not in (17, 6):
             continue
         if protocol == 17:
-            udp_header = packet[eth_head_len + iph[0] * 4, eth_head_len + iph[0] * 4 + 8]
+            udp_header = packet[eth_head_len + iph_len * 4: eth_head_len + iph_len * 4 + 8]
             udph = struct.unpack('!HHHH' , udp_header)
             udp_d_port = udph[1]
             print ("Udp, port ", udp_d_port)
 #            backend_process(d_addr, udp_d_port, packet_size)
 
         if protocol == 6:
-            tcp_header = packet[eth_head_len + iph[0] * 4, eth_head_len + iph[0] * 4 + 20]
+            tcp_header = packet[eth_head_len + iph_len * 4: eth_head_len + iph_len * 4 + 20]
             tcph = struct.unpack('!HHLLBBHHH', tcp_header)
             tcp_d_port = tcph[1]
             print ("Tcp, port ", tcp_d_port)
