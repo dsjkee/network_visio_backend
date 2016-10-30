@@ -10,8 +10,32 @@ filter_addrs = []
 hosts = []
 class_dict = {}
 
+class my_json_object:
+    def toJSON(self):
+        return json.dumps(self, default=lambda o: o.__dict__,
+            sort_keys=True, indent=4)
+
+def json_encoding(encoded_class):
+    json_view = my_json_object()
+    json_view.is_active = encoded_class.is_active
+    json_view.ip_addr = encoded_class.ip_addr
+    json_view.input_traffic = encoded_class.input_traffic
+
+    i = 0
+    while(i < len(encoded_class.w_services)):
+        json_view.w_services[i] = my_json_object()
+        json_view.w_services[i].is_active = encoded_class.w_services[i].is_active
+        json_view.w_services[i].input_traffic = encoded_class.w_services[i].input_traffic
+        json_view.w_services[i].port = encoded_class.w_services[i].port
+        i += 1
+    return json_view
+
+
+
 def send_to_gui():
-    print "90"
+    i = 0
+    while(i < len(hosts)):
+        print(json_encoding(hosts[i]))
 
 
 def find_by_key(array, key):
@@ -47,7 +71,7 @@ def backend_process(dest_ip, dest_port, packet_len):
 
 def backend_deamon():
     try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_RAW)
+        s = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_IP)
     except socket.error:
         print "Can't create socket"
         sys.exit()
@@ -56,12 +80,18 @@ def backend_deamon():
     t.start()
 
     while True:
-        packet = s.recvfrom(65535)
-        packet_size = len(packet) / 1024 # Kbyte
+
+        frame = s.recvfrom(65535)
+        packet = frame[0]
+        print (packet)
+        packet_size = len(packet)  # Kbyte
+
+        print ("Size:",packet_size)
 
         ip_header = packet[eth_head_len, eth_head_len + 20]
         iph = struct.unpack('!BBHHHBBH4s4s', ip_header)
         d_addr = socket.inet_ntoa(iph[9]);
+        print ("Dest ip:", d_addr)
         if d_addr not in filter_addrs:
             continue
         protocol = iph[6]
@@ -71,10 +101,14 @@ def backend_deamon():
             udp_header = packet[eth_head_len + iph[0] * 4, eth_head_len + iph[0] * 4 + 8]
             udph = struct.unpack('!HHHH' , udp_header)
             udp_d_port = udph[1]
-            backend_process(d_addr, udp_d_port, packet_size)
+            print ("Udp, port ", udp_d_port)
+#            backend_process(d_addr, udp_d_port, packet_size)
 
         if protocol == 6:
             tcp_header = packet[eth_head_len + iph[0] * 4, eth_head_len + iph[0] * 4 + 20]
             tcph = struct.unpack('!HHLLBBHHH', tcp_header)
             tcp_d_port = tcph[1]
-            backend_process(d_addr, tcp_d_port, packet_size)
+            print ("Tcp, port ", tcp_d_port)
+#           backend_process(d_addr, tcp_d_port, packet_size)
+
+backend_deamon()
