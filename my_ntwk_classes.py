@@ -15,7 +15,7 @@ class Working_host:
     def __init__(self, service_count, ports, address):
         i = 0
         self.ip_addr = address
-        while(i != service_count - 1):
+        while(i != service_count):
             f = Working_service(ports[i])
             self.w_services.append(f)
             i += 1
