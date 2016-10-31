@@ -39,19 +39,31 @@ def json_encoding(encoded_class):
 
 def send_to_gui():
 	i = 0
-	while(i < len(hosts)):
-		print(json_encoding(hosts[i]))
+	global host_count
+	while(i < host_count):
+		print(json_encoding(hosts[i]).toJSON())
 		i+=1
 
-def find_by_key(array, key):
+def find_by_ip(array, key):
 	i = 0
-	while(i != len(array)):
+	global host_count
+	while(i != host_count):
 		if array[i].ip_addr == key:
 			return i
+		i+=1
+	return None
+def find_by_port(array, key):
+	i = 0
+	global service_count
+	while(i != service_count):
+		if array[i].port == key:
+			return i
+		i+=1
 	return None
 
 def init_classess():
 	i = 0
+	global host_count
 	host_count = int(sys.argv[1])
 	global service_count
 	service_count = int(sys.argv[2 + host_count])
@@ -68,10 +80,10 @@ def init_classess():
 
 
 def backend_process(dest_ip, dest_port, packet_len):
-	idx_1 = find_by_key(hosts, dest_ip)
+	idx_1 = find_by_ip(hosts, dest_ip)
 	if idx_1 == None:
 		return None
-	idx_2 = find_by_key(hosts[idx_1].w_services, dest_port)
+	idx_2 = find_by_port(hosts[idx_1].w_services, dest_port)
 	if idx_2 == None:
 		return None
 	hosts[idx_1].w_services[idx_2].input_traffic += packet_len
@@ -89,24 +101,24 @@ def backend_deamon():
 		print msg[1]
 		sys.exit()
 
-	#t = threading.Timer(1.0, send_to_gui)
-	#t.start()
+	t = threading.Timer(10.0, send_to_gui)
+	t.start()
 
 	while True:
 
 		frame = s.recvfrom(65535)
 		packet = frame[0]
-		print (packet)
+		#print (packet)
 		packet_size = len(packet)  # Kbyte
 
-		print ("Size:",packet_size)
+		#print ("Size:",packet_size)
 
 		ip_header = packet[eth_head_len : eth_head_len + 20]
 		iph = struct.unpack("!BBHHHBBH4s4s", ip_header)
 		d_addr = socket.inet_ntoa(iph[9])
-		print ("Dest ip:", d_addr)
-		#if d_addr not in filter_addrs:
-			#continue
+		#print ("Dest ip:", d_addr)
+		if d_addr not in filter_addrs:
+			continue
 		protocol = iph[6]
 		iph_len = iph[0]&0xF
 #	print iph_len, iph_len
@@ -126,8 +138,8 @@ def backend_deamon():
 			print ("Tcp, port ", tcp_d_port)
 			backend_process(d_addr, tcp_d_port, packet_size)
 
-#backend_deamon()
 service_count = 0
+host_count = 0
 init_classess()
-#print len(hosts[0].w_services)
-print(json_encoding(hosts[0]).toJSON())
+backend_deamon()
+
