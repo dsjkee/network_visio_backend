@@ -11,7 +11,7 @@ hosts = []
 class_dict = {}
 
 class my_json_object:
-	w_services = []
+#	w_services = []
 	def toJSON(self):
 		return json.dumps(self, default=lambda o: o.__dict__,sort_keys=True, indent=4)
 
@@ -23,11 +23,15 @@ def json_encoding(encoded_class):
 
 	i = 0
 	global service_count
+	print service_count
+	json_view.w_services = []
 	while(i != service_count):
-		json_view.w_services = my_json_object()
-		json_view.w_services.is_active = encoded_class.w_services[i].is_active
-		json_view.w_services.input_traffic = encoded_class.w_services[i].input_traffic
-		json_view.w_services.port = encoded_class.w_services[i].port
+		tmp = my_json_object()
+		tmp.is_active = encoded_class.w_services[i].is_active
+		tmp.input_traffic = encoded_class.w_services[i].input_traffic
+		tmp.port = encoded_class.w_services[i].port
+		json_view.w_services.append(tmp)
+		tmp = None
 		i += 1
 	return json_view
 
@@ -41,7 +45,7 @@ def send_to_gui():
 
 def find_by_key(array, key):
 	i = 0
-	while(i != array.count()):
+	while(i != len(array)):
 		if array[i].ip_addr == key:
 			return i
 	return None
