@@ -11,10 +11,20 @@ hosts = []
 class_dict = {}
 
 class my_json_object:
-#	w_services = []
 	def toJSON(self):
 		return json.dumps(self, default=lambda o: o.__dict__,sort_keys=True, indent=4)
 
+def clear_all():
+	i = 0
+	global host_count
+	while(i != host_count):
+		j = 0
+		hosts[i].input_traffic = 0
+		global service_count
+		while(j != service_count):
+			hosts[i].w_services[j].input_traffic = 0
+			j+=1
+		i+=1
 def json_encoding(encoded_class):
 	json_view = my_json_object()
 	json_view.is_active = encoded_class.is_active
@@ -23,7 +33,6 @@ def json_encoding(encoded_class):
 
 	i = 0
 	global service_count
-	print service_count
 	json_view.w_services = []
 	while(i != service_count):
 		tmp = my_json_object()
@@ -35,14 +44,13 @@ def json_encoding(encoded_class):
 		i += 1
 	return json_view
 
-
-
 def send_to_gui():
 	i = 0
 	global host_count
 	while(i < host_count):
 		print(json_encoding(hosts[i]).toJSON())
 		i+=1
+	clear_all()
 
 def find_by_ip(array, key):
 	i = 0
@@ -90,6 +98,10 @@ def backend_process(dest_ip, dest_port, packet_len):
 	hosts[idx_1].input_traffic += packet_len
 	return 1
 
+def my_timer(n):
+	while True:
+		t = threading.Timer(float(n), send_to_gui)
+		t.start()
 
 ETH_P_ALL = 0x0003
 def backend_deamon():
@@ -101,8 +113,8 @@ def backend_deamon():
 		print msg[1]
 		sys.exit()
 
-	t = threading.Timer(10.0, send_to_gui)
-	t.start()
+	my_thread = threading.Thread(target=my_timer, args=["1.0"]) #change time self
+	my_thread.start()
 
 	while True:
 

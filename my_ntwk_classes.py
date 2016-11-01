@@ -1,5 +1,5 @@
 class Working_service:
-    is_active = 0
+    is_active = 1
     input_traffic = 0
     port = 0
 
@@ -7,7 +7,7 @@ class Working_service:
         self.port = port
 
 class Working_host:
-    is_active = 0
+    is_active = 1
     ip_addr = ""
     w_services = []
     input_traffic = 0
