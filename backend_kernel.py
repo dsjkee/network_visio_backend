@@ -82,7 +82,6 @@ def init_classess():
 	while (i != host_count):
 		filter_addrs.append(sys.argv[i + 2])
 		buf = Working_host(service_count, ports, sys.argv[i + 2])
-		print
 		hosts.append(buf)
 		i += 1
 
