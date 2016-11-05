@@ -98,9 +98,10 @@ def backend_process(dest_ip, dest_port, packet_len):
 	return 1
 
 def my_timer(n):
+	t = threading.Timer(float(n), send_to_gui)
 	while True:
-		t = threading.Timer(float(n), send_to_gui)
 		t.start()
+		t.join()
 
 ETH_P_ALL = 0x0003
 def backend_deamon():
