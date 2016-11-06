@@ -19,7 +19,6 @@ class my_json_object:
 		return json.dumps(self, default=lambda o: o.__dict__,sort_keys=True, indent=4)
 
 def sig_handler(signo, arg):
-#	my_thread._Thread__stop()
 	global is_alive
 	is_alive = 0
 	exit()
@@ -66,7 +65,7 @@ def find_by_ip(array, key):
 	i = 0
 	global host_count
 	while(i != host_count):
-		if array[i].ip_addr == key:
+		if array[i].ip_addr == str(key):
 			return i
 		i+=1
 	return None
@@ -74,7 +73,7 @@ def find_by_port(array, key):
 	i = 0
 	global service_count
 	while(i != service_count):
-		if array[i].port == key:
+		if array[i].port == str(key):
 			return i
 		i+=1
 	return None
@@ -100,11 +99,11 @@ def backend_process(dest_ip, dest_port, packet_len):
 	idx_1 = find_by_ip(hosts, dest_ip)
 	if idx_1 == None:
 		return None
+	hosts[idx_1].input_traffic = hosts[idx_1].input_traffic + packet_len
 	idx_2 = find_by_port(hosts[idx_1].w_services, dest_port)
 	if idx_2 == None:
 		return None
-	hosts[idx_1].w_services[idx_2].input_traffic += packet_len
-	hosts[idx_1].input_traffic += packet_len
+	hosts[idx_1].w_services[idx_2].input_traffic = hosts[idx_1].w_services[idx_2].input_traffic + packet_len
 	return 1
 
 def my_timer(n):
@@ -124,41 +123,37 @@ def backend_deamon():
 		sys.exit()
 
 	global my_thread
-	my_thread = threading.Thread(target=my_timer, args=["1.0"]) #change time self
+	my_thread = threading.Thread(target=my_timer, args=["20.0"]) #change time self
 	my_thread.start()
 
 	while True:
 
 		frame = s.recvfrom(65535)
 		packet = frame[0]
-		#print (packet)
 		packet_size = len(packet)  # Kbyte
 
-		#print ("Size:",packet_size)
 
 		ip_header = packet[eth_head_len : eth_head_len + 20]
 		iph = struct.unpack("!BBHHHBBH4s4s", ip_header)
 		d_addr = socket.inet_ntoa(iph[9])
-		#print ("Dest ip:", d_addr)
 		if d_addr not in filter_addrs:
 			continue
 		protocol = iph[6]
 		iph_len = iph[0]&0xF
-#	print iph_len, iph_len
 		if protocol not in (17, 6):
 			continue
 		if protocol == 17:
 			udp_header = packet[eth_head_len + iph_len * 4: eth_head_len + iph_len * 4 + 8]
 			udph = struct.unpack('!HHHH' , udp_header)
-			udp_d_port = udph[1]
-			print ("Udp, port ", udp_d_port)
+			udp_d_port = udph[1] #if you want to make filter by SRC_PORT use udph[0]
+#			print ("Udp, port ", udp_d_port)
 			backend_process(d_addr, udp_d_port, packet_size)
 
 		if protocol == 6:
 			tcp_header = packet[eth_head_len + iph_len * 4: eth_head_len + iph_len * 4 + 20]
 			tcph = struct.unpack('!HHLLBBHHH', tcp_header)
-			tcp_d_port = tcph[1]
-			print ("Tcp, port ", tcp_d_port)
+			tcp_d_port = tcph[1]#if you want to make filter by SRC_PORT use tcph[0]
+#			print ("Tcp, port ", tcp_d_port)
 			backend_process(d_addr, tcp_d_port, packet_size)
 
 service_count = 0
