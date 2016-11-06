@@ -1,5 +1,8 @@
 The main purpose of this app - is select packets which consist of some filter parametrs
 and translete information about this packets to GUI.
+
+Program filtering by port destination of recieved packet
+
 Filter parametrs are set by programm running.
 Now, it parametrs is:
 host_ip and service_port.

@@ -4,16 +4,25 @@ import struct
 import threading
 import json
 import time
+from signal import SIGINT, SIGTERM, signal
 from my_ntwk_classes import Working_service, Working_host
 
 eth_head_len = 14
 filter_addrs = []
 hosts = []
 class_dict = {}
+my_thread = 0
+is_alive = 1
 
 class my_json_object:
 	def toJSON(self):
 		return json.dumps(self, default=lambda o: o.__dict__,sort_keys=True, indent=4)
+
+def sig_handler(signo, arg):
+#	my_thread._Thread__stop()
+	global is_alive
+	is_alive = 0
+	exit()
 
 def clear_all():
 	i = 0
@@ -99,7 +108,8 @@ def backend_process(dest_ip, dest_port, packet_len):
 	return 1
 
 def my_timer(n):
-	while True:
+	global is_alive
+	while is_alive:
 		time.sleep(float(n))
 		send_to_gui()
 
@@ -113,6 +123,7 @@ def backend_deamon():
 		print msg[1]
 		sys.exit()
 
+	global my_thread
 	my_thread = threading.Thread(target=my_timer, args=["1.0"]) #change time self
 	my_thread.start()
 
@@ -152,6 +163,7 @@ def backend_deamon():
 
 service_count = 0
 host_count = 0
+signal(SIGINT, sig_handler)
 init_classess()
 backend_deamon()
 
